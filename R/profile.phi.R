@@ -3,6 +3,7 @@
 #'
 #' @param model a model object which accepts a family argument (should correspond to "binomial") with a link function. The model should have corresponding \code{"\link{update}"} and \code{"\link{logLik}"} functionality implemented.
 #' @param opt.control arguments passed to \code{"\link{optim}"}.
+#' @param y response variable, must be provided if the model has no "y" slot.
 #' @param ... other arguments passed to \code{"\link{update}"}.
 #'
 #' @return A list of length 2, including the optimisation results and the final model object.
@@ -30,10 +31,15 @@
 #'exp(res$optr$par) # extract phi
 #'model2 <- res$final.mod
 #'
-#' @export
-profile.phi <- function(model, opt.control = list(maxit = 100, method = "BFGS"), ...){
+#' @export profile.phi
+profile.phi <- function(model, opt.control = list(maxit = 100, method = "BFGS"), y = NULL, ...){
   newmodelfn <- model
 
+  if(!is.null(y) && is.null(model$y)){
+    model$y <- y
+  }else if(is.null(y) && is.null(model$y)){
+    stop("No response variable provided or present in the model.")
+  }
   gr <- function(logphi, model){
     y = model$y
     phi = exp(logphi)
