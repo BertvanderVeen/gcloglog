@@ -2,8 +2,9 @@
 #' @description This function takes a model object with a family argument, and estimates a parameter phi that controls the shape of the link function.
 #'
 #' @param model a model object which accepts a family argument (should correspond to "binomial") with a link function. The model should have corresponding \code{"\link{update}"} and \code{"\link{logLik}"} functionality implemented.
-#' @param opt.control arguments passed to \code{"\link{optim}"}.
-#' @param y response variable, must be provided if the model has no "y" slot.
+#' @param y response variable.
+#' @param optimizer numerical optimisation routine used to estimate phi. Must accept the starting value, objective function, gradient, and control arugments (in that order). Defaults to \code{"\link{optim}"}.
+#' @param optControl arguments passed to optimizer.
 #' @param ... other arguments passed to \code{"\link{update}"}.
 #'
 #' @return A list of length 2, including the optimisation results and the final model object.
@@ -32,16 +33,10 @@
 #'model2 <- res$final.mod
 #'
 #' @export profile.phi
-profile.phi <- function(model, opt.control = list(maxit = 100, method = "BFGS"), y = NULL, ...){
+profile.phi <- function(model, y, optimizer = optim, optControl = list(method = "BFGS", maxit = 100), ...){
   newmodelfn <- model
 
-  if(!is.null(y) && is.null(model$y)){
-    model$y <- y
-  }else if(is.null(y) && is.null(model$y)){
-    stop("No response variable provided or present in the model.")
-  }
-  gr <- function(logphi, model){
-    y = model$y
+  gr <- function(logphi, model, y, ...){
     phi = exp(logphi)
     gcloglog <- make.gcloglog(phi)
     fit <- try(newmodelgr <- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
@@ -58,7 +53,7 @@ profile.phi <- function(model, opt.control = list(maxit = 100, method = "BFGS"),
     }
   }
   # needs to be adjusted for Ntrials >1
-  fn <- function(logphi, model, ...){
+  fn <- function(logphi, model, y, ...){
     phi = exp(logphi)
     gcloglog <- make.gcloglog(phi)
     fit <- try(newmodelfn <<- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
@@ -69,14 +64,19 @@ profile.phi <- function(model, opt.control = list(maxit = 100, method = "BFGS"),
       -logLik(newmodelfn)
     }
   }
-  if("method" %in% names(opt.control)){
-  method = opt.control$method
-  opt.control <- opt.control[names(opt.control) != "method"]
+
+  if(missing(optimizer)){
+  if("method" %in% names(optControl)){
+  method = optControl$method
+  optControl <- optControl[names(optControl) != "method"]
   }else{
     method  = "BFGS"
   }
 
-  optr <- optim(1e-12, fn, gr, method = method, control = opt.control, model = model)
-
+  optr <- optim(log(10), fn = fn, gr = gr, method = method, control = optControl, model = model, y = y)
+  }else{
+  optr <- optimizer(log(10), fn, gr, control = optControl)
+  }
   return(list(optr = optr, final.mod = newmodelfn))
 }
+

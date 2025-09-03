@@ -4,14 +4,22 @@
 \alias{profile.phi}
 \title{MLE estimation of the shape of a binomial link function}
 \usage{
-\method{profile}{phi}(model, opt.control = list(maxit = 100, method = "BFGS"), y = NULL, ...)
+\method{profile}{phi}(
+  model,
+  y,
+  optimizer = optim,
+  optControl = list(method = "BFGS", maxit = 100),
+  ...
+)
 }
 \arguments{
 \item{model}{a model object which accepts a family argument (should correspond to "binomial") with a link function. The model should have corresponding \code{"\link{update}"} and \code{"\link{logLik}"} functionality implemented.}
 
-\item{opt.control}{arguments passed to \code{"\link{optim}"}.}
+\item{y}{response variable.}
 
-\item{y}{response variable, must be provided if the model has no "y" slot.}
+\item{optimizer}{numerical optimisation routine used to estimate phi. Must accept "fn", "gr", and "control" arguments. Defaults to \code{"\link{optim}"}.}
+
+\item{optControl}{arguments passed to optimizer.}
 
 \item{...}{other arguments passed to \code{"\link{update}"}.}
 }
