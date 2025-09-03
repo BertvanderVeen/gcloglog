@@ -10,6 +10,8 @@
 \item{model}{a model object which accepts a family argument (should correspond to "binomial") with a link function. The model should have corresponding \code{"\link{update}"} and \code{"\link{logLik}"} functionality implemented.}
 
 \item{opt.control}{arguments passed to \code{"\link{optim}"}.}
+
+\item{...}{other arguments passed to \code{"\link{update}"}.}
 }
 \value{
 A list of length 2, including the optimisation results and the final model object.
@@ -19,6 +21,7 @@ This function takes a model object with a family argument, and estimates a param
 }
 \examples{
 # Define logit link via gcloglog
+library(gcloglog)
 gcloglog1 <- make.gcloglog(1)
 
 # Fit logistic regression with gcloglog

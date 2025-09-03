@@ -24,6 +24,7 @@ This function is used with \code{"\link{family}"} functions in \code{"\link{glm}
 }
 \examples{
 # Define logit link via gcloglog
+library(gcloglog)
 gcloglog1 <- make.gcloglog(1)
 
 # Fit logistic regression with gcloglog
