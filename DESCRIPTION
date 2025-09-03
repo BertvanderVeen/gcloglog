@@ -1,0 +1,11 @@
+Package: gcloglog
+Title: Functions for fitting models with the generalized complementary log-log function
+Version: 0.0.0.9000
+Authors@R: c(person("Bert", "van der veen", role = c("aut", "cre"), email = "bert_van_der_veen@hotmail.com""),
+             person("Francis K.C.", "Hui", role = "aut"))
+Description: The gcloglog package provides functionality for fitting a flexible link function in binomial regression based on a latent negative-binomial count.
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
