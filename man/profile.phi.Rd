@@ -4,7 +4,7 @@
 \alias{profile.phi.glm}
 \title{MLE estimation of the shape of a binomial link function}
 \usage{
-\method{profile}{phi.glm}(
+\method{profile.phi}{glm}(
   model,
   y,
   optimizer = optim,

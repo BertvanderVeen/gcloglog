@@ -35,7 +35,8 @@
 #' @importFrom nloptr bobyqa
 #'
 #' @rdname profile.phi
-#' @export profile.phi.glm
+#' @export
+#' @method profile.phi glm
 profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(method = "BFGS", maxit = 100), ...){
   newmodelfn <- model
 
