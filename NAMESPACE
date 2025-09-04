@@ -2,3 +2,5 @@
 
 export(make.gcloglog)
 export(profile.phi)
+export(profile.phi.glm)
+importFrom(nloptr,bobyqa)

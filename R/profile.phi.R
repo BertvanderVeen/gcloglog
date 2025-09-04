@@ -32,8 +32,11 @@
 #'exp(res$optr$par) # extract phi
 #'model2 <- res$final.mod
 #'
-#' @export profile.phi
-profile.phi <- function(model, y, optimizer = optim, optControl = list(method = "BFGS", maxit = 100), ...){
+#' @importFrom nloptr bobyqa
+#'
+#' @rdname profile.phi
+#' @export profile.phi.glm
+profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(method = "BFGS", maxit = 100), ...){
   newmodelfn <- model
 
   gr <- function(logphi, model, y, ...){
@@ -80,3 +83,25 @@ profile.phi <- function(model, y, optimizer = optim, optControl = list(method = 
   return(list(optr = optr, final.mod = newmodelfn))
 }
 
+#' @export profile.phi
+profile.phi <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...){
+  newmodelfn <- model
+
+  fn <- function(logphi, model, y, ...){
+    phi = exp(logphi)
+    gcloglog <- make.gcloglog(phi)
+    fit <- try(newmodelfn <<- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
+
+    if(inherits(fit, "try-error")){
+      NA
+    }else{
+      -logLik(newmodelfn)
+    }
+  }
+
+  # Here we do gradient free optimisatin
+  # The "general" class of models is harder to implement analytical derivatives for..
+  optr <- optimizer(log(10), fn, control = optControl)
+
+  return(list(optr = optr, final.mod = newmodelfn))
+}
