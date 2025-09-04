@@ -2,6 +2,7 @@
 % Please edit documentation in R/profile.phi.R
 \name{profile.phi.glm}
 \alias{profile.phi.glm}
+\alias{profile.phi.default}
 \title{MLE estimation of the shape of a binomial link function}
 \usage{
 \method{profile.phi}{glm}(
@@ -11,6 +12,8 @@
   optControl = list(method = "BFGS", maxit = 100),
   ...
 )
+
+\method{profile.phi}{default}(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...)
 }
 \arguments{
 \item{model}{a model object which accepts a family argument (should correspond to "binomial") with a link function. The model should have corresponding \code{"\link{update}"} and \code{"\link{logLik}"} functionality implemented.}

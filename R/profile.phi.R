@@ -84,8 +84,10 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
   return(list(optr = optr, final.mod = newmodelfn))
 }
 
-#' @export profile.phi
-profile.phi <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...){
+#' @rdname profile.phi
+#' @export
+#' @method profile.phi default
+profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...){
   newmodelfn <- model
 
   fn <- function(logphi, model, y, ...){
@@ -102,7 +104,12 @@ profile.phi <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 
 
   # Here we do gradient free optimisatin
   # The "general" class of models is harder to implement analytical derivatives for..
-  optr <- optimizer(log(10), fn, control = optControl)
+  optr <- optimizer(log(10), fn, control = optControl, model = model)
 
   return(list(optr = optr, final.mod = newmodelfn))
+}
+
+#' @export
+profile.phi <- function(x, ...) {
+  UseMethod("profile.phi")
 }
