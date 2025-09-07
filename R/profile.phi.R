@@ -38,13 +38,20 @@
 #' @export
 #' @method profile.phi glm
 profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(method = "BFGS", maxit = 100), ...){
-  newmodelfn <- model
   N <- weights(model)
 
-  gr <- function(logphi, model, y, N,  ...){
+  nll0 <- -logLik(model)
+
+  # objective in the GLM case
+  gr <- function(logphi, model, y, N, nll0, ...){
     phi = exp(logphi)
     gcloglog <- make.gcloglog(phi)
-    fit <- try(newmodelgr <- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
+    fit <- try(newmodelgr <- update(model, family = binomial(link = gcloglog), start = coef(model), ...), silent = TRUE)
+
+    if(inherits(fit, "try-error")){
+      # try without starting values
+      fit <- try(newmodelgr <- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
+    }
 
     if(inherits(fit, "try-error")){
       NA
@@ -66,10 +73,23 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
     method  = "BFGS"
   }
 
-  optr <- optim(log(10), fn = fn, gr = gr, method = method, control = optControl, model = model, y = y)
+  optr <- optim(log(10), fn = fn.glm, gr = gr, method = method, control = optControl, model = model, y = y, N = N, nll0 = nll0)
   }else{
-  optr <- optimizer(log(10), fn, gr, control = optControl, model = model, y = y)
+  optr <- optimizer(log(10), fn.glm, gr, control = optControl, model = model, y = y, N = N, nll0 = nll0)
   }
+  return(list(optr = optr))
+}
+
+#' @rdname profile.phi
+#' @export
+#' @method profile.phi merMod
+profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...){
+
+  nll0 = -logLik(model)
+
+  # Here we do gradient free optimisatin
+  optr <- optimizer(log(10), fn.merMod, control = optControl, model = model, y = y, nll0 = nll0)
+
   return(list(optr = optr))
 }
 
@@ -77,11 +97,10 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
 #' @export
 #' @method profile.phi default
 profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...){
-  newmodelfn <- model
-
+  # still needs to be adjusted for N>1 case
   # Here we do gradient free optimisatin
   # The "general" class of models is harder to implement analytical derivatives for..
-  optr <- optimizer(log(10), fn, control = optControl, model = model, y = y)
+  optr <- optimizer(log(10), fn.generic, control = optControl, model = model, y = y)
 
   return(list(optr = optr))
 }
@@ -91,12 +110,79 @@ profile.phi <- function(x, ...) {
   UseMethod("profile.phi")
 }
 
-# objective function in all cases.
-# not exported
-fn <- function(logphi, model, ...){
+fn.glm <- function(logphi, model, nll0, ...){
   phi = exp(logphi)
   gcloglog <- make.gcloglog(phi)
-  fit <- try(newmodelfn <- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
+
+  args <- list(...)
+  args$y <- NULL
+  args$N <- NULL
+
+  args$object = model
+  args$family = binomial(link = gcloglog)
+
+  args$start = coef(model)
+
+  fit <- try(newmodelfn <- do.call(update, args), silent = TRUE)
+
+  if(inherits(fit, "try-error") && !is.null(args$start)){
+    args$start <- NULL
+    # try without starting values
+    fit <- try(newmodelfn <- do.call(update, args), silent = TRUE)
+  }
+
+  if(inherits(fit, "try-error")){
+    9e9
+  }else{
+    nll <- -logLik(newmodelfn)
+    if(nll < nll0)model <<- newmodelfn # improving starting values of glm
+    nll
+  }
+}
+
+fn.merMod <- function(logphi, model, nll0, ...){
+  phi = exp(logphi)
+  gcloglog <- make.gcloglog(phi)
+
+  args <- list(...)
+  args$y <- NULL
+  args$N <- NULL
+
+  args$object = model
+  args$family = binomial(link = gcloglog)
+
+  args$start = list(fixef = fixef(model),
+                    theta =  getME(model, "theta"))
+
+  fit <- try(newmodelfn <- do.call(update, args), silent = TRUE)
+
+  if(inherits(fit, "try-error") && !is.null(args$start)){
+    args$start <- NULL
+    # try without starting values
+    fit <- try(newmodelfn <- do.call(update, args), silent = TRUE)
+  }
+
+  if(inherits(fit, "try-error")){
+    9e9
+  }else{
+    nll <- -logLik(newmodelfn)
+    if(nll < nll0)model <<- newmodelfn # improving starting values of glm
+    nll
+  }
+}
+
+fn.generic <- function(logphi, model, ...){
+  phi = exp(logphi)
+  gcloglog <- make.gcloglog(phi)
+
+  args <- list(...)
+  args$y <- NULL
+  args$N <- NULL
+
+  args$object = model
+  args$family = binomial(link = gcloglog)
+
+  fit <- try(newmodelfn <- do.call(update, args), silent = TRUE)
 
   if(inherits(fit, "try-error")){
     9e9
@@ -104,3 +190,4 @@ fn <- function(logphi, model, ...){
     -logLik(newmodelfn)
   }
 }
+

@@ -2,6 +2,7 @@
 
 S3method(profile.phi,default)
 S3method(profile.phi,glm)
+S3method(profile.phi,merMod)
 export(make.gcloglog)
 export(profile.phi)
 importFrom(nloptr,bobyqa)

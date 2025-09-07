@@ -2,6 +2,7 @@
 % Please edit documentation in R/profile.phi.R
 \name{profile.phi.glm}
 \alias{profile.phi.glm}
+\alias{profile.phi.merMod}
 \alias{profile.phi.default}
 \title{MLE estimation of the shape of a binomial link function}
 \usage{
@@ -12,6 +13,8 @@
   optControl = list(method = "BFGS", maxit = 100),
   ...
 )
+
+\method{profile.phi}{merMod}(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...)
 
 \method{profile.phi}{default}(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...)
 }
@@ -27,7 +30,7 @@
 \item{...}{other arguments passed to \code{"\link{update}"}.}
 }
 \value{
-A list of length 2, including the optimisation results and the final model object.
+The optimisation results of the profiling, with log(phi) as the estimated parameter.
 }
 \description{
 This function takes a model object with a family argument, and estimates a parameter phi that controls the shape of the link function.
