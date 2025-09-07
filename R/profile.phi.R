@@ -7,7 +7,7 @@
 #' @param optControl arguments passed to optimizer.
 #' @param ... other arguments passed to \code{"\link{update}"}.
 #'
-#' @return A list of length 2, including the optimisation results and the final model object.
+#' @return The optimisation results of the profiling, with log(phi) as the estimated parameter.
 #'
 #' @author Bert van der Veen
 #' @references
@@ -39,8 +39,9 @@
 #' @method profile.phi glm
 profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(method = "BFGS", maxit = 100), ...){
   newmodelfn <- model
+  N <- weights(model)
 
-  gr <- function(logphi, model, y, ...){
+  gr <- function(logphi, model, y, N,  ...){
     phi = exp(logphi)
     gcloglog <- make.gcloglog(phi)
     fit <- try(newmodelgr <- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
@@ -53,19 +54,7 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
       q = 1-p
 
       # gradient for nll
-      sum(phi * q * (log(phi / (phi + exp(eta))) + exp(eta) / (phi + exp(eta))) *(y / p - (1 - y) / (1 - p)))
-    }
-  }
-  # needs to be adjusted for Ntrials >1
-  fn <- function(logphi, model, y, ...){
-    phi = exp(logphi)
-    gcloglog <- make.gcloglog(phi)
-    fit <- try(newmodelfn <<- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
-
-    if(inherits(fit, "try-error")){
-      NA
-    }else{
-      -logLik(newmodelfn)
+      sum(phi * q * (log(phi / (phi + exp(eta))) + exp(eta) / (phi + exp(eta))) *(y / p - (N - y) / (1 - p)))
     }
   }
 
@@ -79,9 +68,9 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
 
   optr <- optim(log(10), fn = fn, gr = gr, method = method, control = optControl, model = model, y = y)
   }else{
-  optr <- optimizer(log(10), fn, gr, control = optControl)
+  optr <- optimizer(log(10), fn, gr, control = optControl, model = model, y = y)
   }
-  return(list(optr = optr, final.mod = newmodelfn))
+  return(list(optr = optr))
 }
 
 #' @rdname profile.phi
@@ -90,26 +79,28 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
 profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...){
   newmodelfn <- model
 
-  fn <- function(logphi, model, y, ...){
-    phi = exp(logphi)
-    gcloglog <- make.gcloglog(phi)
-    fit <- try(newmodelfn <<- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
-
-    if(inherits(fit, "try-error")){
-      NA
-    }else{
-      -logLik(newmodelfn)
-    }
-  }
-
   # Here we do gradient free optimisatin
   # The "general" class of models is harder to implement analytical derivatives for..
-  optr <- optimizer(log(10), fn, control = optControl, model = model)
+  optr <- optimizer(log(10), fn, control = optControl, model = model, y = y)
 
-  return(list(optr = optr, final.mod = newmodelfn))
+  return(list(optr = optr))
 }
 
 #' @export
 profile.phi <- function(x, ...) {
   UseMethod("profile.phi")
+}
+
+# objective function in all cases.
+# not exported
+fn <- function(logphi, model, ...){
+  phi = exp(logphi)
+  gcloglog <- make.gcloglog(phi)
+  fit <- try(newmodelfn <- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
+
+  if(inherits(fit, "try-error")){
+    9e9
+  }else{
+    -logLik(newmodelfn)
+  }
 }
