@@ -61,7 +61,8 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
       q = 1-p
 
       # gradient for nll
-      sum(phi * q * (-log1p(exp(eta-log(phi))) + plogis(eta-log(phi))) *(y / p - (N - y) / (1 - p)))
+      a = eta-log(phi)
+      sum(phi * q * (-(pmax(0, a) + log1p(exp(-abs(a)))) + plogis(a)) *(y / p - (N - y) / (1 - p)))
     }
   }
 
@@ -84,9 +85,33 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
     method  = "BFGS"
   }
 
-  optr <- optim(log(1.1), fn = fn.glm, gr = gr, method = method, control = optControl, model = model, y = y, N = N, nll0 = nll0)
+  optr <- try(optim(log(1.01), fn = fn.glm, gr = gr, method = method, control = optControl, model = model, y = y, N = N, nll0 = nll0), silent = TRUE)
+
+  # Search a bit for a start
+  if(inherits(optr,"try-error")){
+    maxit = 20
+    logphi.start = 1.1
+    it <- 1
+    while(inherits(optr,"try-error") && it  < maxit){
+    optr <- try(optim(logphi.start, fn = fn.glm, gr = gr, method = method, control = optControl, model = model, y = y, N = N, nll0 = nll0), silent = TRUE)
+    logphi.start <- logphi.start + 0.1
+    it <- it + 1
+    }
+  }
   }else{
-  optr <- optimizer(log(1.1), fn.glm, gr, control = optControl, model = model, y = y, N = N, nll0 = nll0)
+  optr <- try(optimizer(log(1.01), fn.glm, gr, control = optControl, model = model, y = y, N = N, nll0 = nll0), silent = TRUE)
+
+  # Search a bit for a start
+  if(inherits(optr,"try-error")){
+    maxit = 20
+    logphi.start = 1.1
+    it <- 1
+    while(inherits(optr,"try-error") && it  < maxit){
+      optr <- try(optimizer(logphi.start, fn.glm, gr, control = optControl, model = model, y = y, N = N, nll0 = nll0), silent = TRUE)
+      logphi.start <- logphi.start + 0.1
+      it <- it + 1
+    }
+  }
   }
   return(list(optr = optr))
 }
@@ -99,7 +124,7 @@ profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(m
   nll0 = -logLik(model)
 
   # Here we do gradient free optimisatin
-  optr <- optimizer(log(1.1), fn.merMod, control = optControl, model = model, y = y, nll0 = nll0)
+  optr <- optimizer(log(1.01), fn.merMod, control = optControl, model = model, y = y, nll0 = nll0)
 
   return(list(optr = optr))
 }
@@ -111,7 +136,7 @@ profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(
   # still needs to be adjusted for N>1 case
   # Here we do gradient free optimisatin
   # The "general" class of models is harder to implement analytical derivatives for..
-  optr <- optimizer(log(1.1), fn.generic, control = optControl, model = model, y = y)
+  optr <- optimizer(log(1.01), fn.generic, control = optControl, model = model, y = y)
 
   return(list(optr = optr))
 }
