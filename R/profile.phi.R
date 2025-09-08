@@ -65,6 +65,17 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
     }
   }
 
+  # could try to find a decent start
+  # continue = TRUE
+  # logphi.start = log(1.1)
+  # while(continue){
+  #   if(is.na(fn.glm(logphi.start, model = model, nll0 = nll0))){
+  #   logphi.start = logphi.start+2
+  #   }else{
+  #     break
+  #   }
+  # }
+
   if(missing(optimizer)){
   if("method" %in% names(optControl)){
   method = optControl$method
@@ -73,9 +84,9 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
     method  = "BFGS"
   }
 
-  optr <- optim(log(10), fn = fn.glm, gr = gr, method = method, control = optControl, model = model, y = y, N = N, nll0 = nll0)
+  optr <- optim(log(1.1), fn = fn.glm, gr = gr, method = method, control = optControl, model = model, y = y, N = N, nll0 = nll0)
   }else{
-  optr <- optimizer(log(10), fn.glm, gr, control = optControl, model = model, y = y, N = N, nll0 = nll0)
+  optr <- optimizer(log(1.1), fn.glm, gr, control = optControl, model = model, y = y, N = N, nll0 = nll0)
   }
   return(list(optr = optr))
 }
@@ -88,7 +99,7 @@ profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(m
   nll0 = -logLik(model)
 
   # Here we do gradient free optimisatin
-  optr <- optimizer(log(10), fn.merMod, control = optControl, model = model, y = y, nll0 = nll0)
+  optr <- optimizer(log(1.1), fn.merMod, control = optControl, model = model, y = y, nll0 = nll0)
 
   return(list(optr = optr))
 }
@@ -100,7 +111,7 @@ profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(
   # still needs to be adjusted for N>1 case
   # Here we do gradient free optimisatin
   # The "general" class of models is harder to implement analytical derivatives for..
-  optr <- optimizer(log(10), fn.generic, control = optControl, model = model, y = y)
+  optr <- optimizer(log(1.1), fn.generic, control = optControl, model = model, y = y)
 
   return(list(optr = optr))
 }
@@ -132,10 +143,14 @@ fn.glm <- function(logphi, model, nll0, ...){
   }
 
   if(inherits(fit, "try-error")){
-    9e9
+    NA
   }else{
     nll <- -logLik(newmodelfn)
-    if(nll < nll0)model <<- newmodelfn # improving starting values of glm
+    if(nll < nll0){
+      # improving starting values of glm
+      assign("model", newmodelfn, envir = parent.frame())
+      assign("nll0", nll, envir = parent.frame())
+      }
     nll
   }
 }
@@ -163,10 +178,14 @@ fn.merMod <- function(logphi, model, nll0, ...){
   }
 
   if(inherits(fit, "try-error")){
-    9e9
+    NA
   }else{
     nll <- -logLik(newmodelfn)
-    if(nll < nll0)model <<- newmodelfn # improving starting values of glm
+    if(nll < nll0){
+      # improving starting values of glm
+      assign("model", newmodelfn, envir = parent.frame())
+      assign("nll0", nll, envir = parent.frame())
+      }
     nll
   }
 }
@@ -185,7 +204,7 @@ fn.generic <- function(logphi, model, ...){
   fit <- try(newmodelfn <- do.call(update, args), silent = TRUE)
 
   if(inherits(fit, "try-error")){
-    9e9
+    NA
   }else{
     -logLik(newmodelfn)
   }
