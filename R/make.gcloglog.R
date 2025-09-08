@@ -3,12 +3,14 @@
 #'
 #' @param phi value for the dispersion parameter the link is evaluated for.
 #'
-#' @return An object of class "link-glm, a list with components
+#' @return An object of class "link-glm, a list with (amongst others) the components:
 #'\describe{
 #'  \item{\emph{linkfun}: }{ Link function \code{function(mu)} for fixed phi}
 #'  \item{\emph{linkinv}: }{ Inverse link function \code{function(eta)} for fixed phi}
+#'  \item{\emph{variance}: }{ variance function}
 #'  \item{\emph{mu.eta}: }{ Derivative \code{function(eta)}}
 #'  \item{\emph{valideta}: }{ \code{function(eta)}TRUE}
+#'  \item{\emph{validmu}: }{ \code{function(mu)} that ensures 0<p<1}
 #'  \item{\emph{name}: }{ the name for the link \code{gcloglog(phi)}}
 #' }
 #' @author Bert van der Veen
@@ -31,13 +33,20 @@
 #'
 #' @export
 make.gcloglog <- function(phi) {
+  phi <- max(phi, .Machine$double.eps)
   link <- list(
-    linkfun = function(mu) { log(phi * ((1 - mu)^(-1/phi) - 1)) },
-    linkinv = function(eta) { 1 - (phi / (phi + exp(eta)))^phi },
+    linkfun = function(mu) { log(phi)+log((1 - mu)^(-1/phi) - 1) },
+    linkinv = function(eta) { pmax(pmin(1 - (phi / (phi + exp(eta)))^phi, 1 - .Machine$double.eps), .Machine$double.eps) },
+    variance = binomial()$variance,
+    dev.resids = binomial()$dev.resids,
+    aic = binomial()$aic,
     mu.eta = function(eta) {
       phi^(phi+1)*(exp(eta)/(phi+exp(eta))^(phi+1))
     },
+    validmu = function(mu)all(is.finite(mu)) && all(mu > 0 & mu < 1),
     valideta = function(eta) TRUE,
+    simulate = binomial()$simulate,
+    dispersion = 1,
     name = paste0("gcloglog(", phi, ")")
   )
   structure(link, class = "link-glm")
