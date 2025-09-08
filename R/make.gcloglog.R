@@ -36,12 +36,13 @@ make.gcloglog <- function(phi) {
   phi <- max(phi, .Machine$double.eps)
   link <- list(
     linkfun = function(mu) { log(phi)+log((1 - mu)^(-1/phi) - 1) },
-    linkinv = function(eta) { pmax(pmin(1 - (phi / (phi + exp(eta)))^phi, 1 - .Machine$double.eps), .Machine$double.eps) },
+    linkinv = function(eta) { pmax(pmin(1 - (plogis(log(phi)-eta))^phi, 1 - .Machine$double.eps), .Machine$double.eps) },
     variance = binomial()$variance,
     dev.resids = binomial()$dev.resids,
     aic = binomial()$aic,
     mu.eta = function(eta) {
-      phi^(phi+1)*(exp(eta)/(phi+exp(eta))^(phi+1))
+      eta <-  pmin(eta, 700) # borrowed from R's cloglog
+      min(phi^(phi+1),9e9)*(plogis(eta-log(phi))^(phi+1))
     },
     validmu = function(mu)all(is.finite(mu)) && all(mu > 0 & mu < 1),
     valideta = function(eta) TRUE,
