@@ -61,7 +61,7 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
       q = 1-p
 
       # gradient for nll
-      sum(phi * q * (log(phi / (phi + exp(eta))) + exp(eta) / (phi + exp(eta))) *(y / p - (N - y) / (1 - p)))
+      sum(phi * q * (-log1p(exp(eta-log(phi))) + plogis(eta-log(phi))) *(y / p - (N - y) / (1 - p)))
     }
   }
 
