@@ -10,12 +10,14 @@ make.gcloglog(phi)
 \item{phi}{value for the dispersion parameter the link is evaluated for.}
 }
 \value{
-An object of class "link-glm, a list with components
+An object of class "link-glm, a list with (amongst others) the components:
 \describe{
 \item{\emph{linkfun}: }{ Link function \code{function(mu)} for fixed phi}
 \item{\emph{linkinv}: }{ Inverse link function \code{function(eta)} for fixed phi}
+\item{\emph{variance}: }{ variance function}
 \item{\emph{mu.eta}: }{ Derivative \code{function(eta)}}
 \item{\emph{valideta}: }{ \code{function(eta)}TRUE}
+\item{\emph{validmu}: }{ \code{function(mu)} that ensures 0<p<1}
 \item{\emph{name}: }{ the name for the link \code{gcloglog(phi)}}
 }
 }
