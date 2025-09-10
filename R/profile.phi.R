@@ -60,7 +60,7 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
       q = 1-p
 
       # gradient for nll
-      a = eta-log(phi)
+      a = eta-logphi
       sum(phi * q * (-(pmax(0, a) + log1p(exp(-abs(a)))) + plogis(a)) *(y / p - (N - y) / (1 - p)))
     }
   }
@@ -353,6 +353,8 @@ profile.gcloglog <- function(model, CI = TRUE, method = "profile", alpha = 0.05,
   if(inherits(final.model, "try-error"))final.model <- try(update(model, family = binomial(link=gcloglog), start = res$start), silent = TRUE)
 
   logLik.mle <- logLik(final.model)
+  prof <- NULL
+  ans = NA
 
   if(CI){
     prof <- profile.phi.CI(logphi.mle, final.model, h = h, ytol = ytol, ystep = ystep, maxit = maxit, adaptive = adaptive, trace = trace)

@@ -46,6 +46,7 @@ make.gcloglog <- function(phi) {
     validmu = function(mu)all(is.finite(mu)) && all(mu > 0 & mu < 1),
     valideta = function(eta) TRUE,
     simulate = binomial()$simulate,
+    initialize = binomial()$initialize,
     dispersion = 1,
     name = paste0("gcloglog(", phi, ")")
   )
