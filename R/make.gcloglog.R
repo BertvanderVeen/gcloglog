@@ -41,8 +41,7 @@ make.gcloglog <- function(phi) {
     dev.resids = binomial()$dev.resids,
     aic = binomial()$aic,
     mu.eta = function(eta) {
-      eta <-  pmin(eta, 700) # borrowed from R's cloglog
-      min(phi^(phi+1),9e9)*exp( eta - (phi + 1) * (eta + log1p(phi * exp(-eta))))
+      exp( eta - (phi + 1) * (eta + log1p(phi * exp(-eta)))+(phi+1)*log(phi))
     },
     validmu = function(mu)all(is.finite(mu)) && all(mu > 0 & mu < 1),
     valideta = function(eta) TRUE,
