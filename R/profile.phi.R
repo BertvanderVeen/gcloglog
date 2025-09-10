@@ -30,7 +30,6 @@
 #'#' Find optimal link shape by profiling phi
 #'res <- profile.phi(model)
 #'exp(res$optr$par) # extract phi
-#'model2 <- res$final.mod
 #'
 #' @importFrom nloptr bobyqa
 #'
@@ -113,7 +112,7 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
     }
   }
   }
-  return(list(optr = optr))
+  return(list(optr = optr, start = coef(model)))
 }
 
 #' @rdname profile.phi
@@ -126,7 +125,8 @@ profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(m
   # Here we do gradient free optimisatin
   optr <- optimizer(log(1.01), fn.merMod, control = optControl, model = model, y = y, nll0 = nll0)
 
-  return(list(optr = optr))
+  return(list(optr = optr, start = list(fixef = fixef(model),
+                                                     theta =  getME(model, "theta"))))
 }
 
 #' @rdname profile.phi
@@ -234,4 +234,154 @@ fn.generic <- function(logphi, model, ...){
     -logLik(newmodelfn)
   }
 }
+
+#' @export profile.phi.CI
+profile.phi.CI <- function(logphi.mle, model,
+                           h = 0.02, ytol = 2, ystep = 0.1,
+                           maxit = 100, adaptive = TRUE, trace = TRUE,...) {
+
+  if(inherits(model, "glm")){
+    fn <- function(logphi.mle, model, nll=0)fn.glm(logphi.mle, model, nll)
+  }else  if(inherits(model, "merMod")){
+    fn <- function(logphi.mle, model, nll=0)fn.merMod(logphi.mle, model, nll)
+  }else{
+    fn <- fn.default
+  }
+
+  nll0 <- fn(logphi.mle, model = model,...)
+
+  eval_along <- function(start, direction) {
+    x <- start
+    yvals <- nll0
+    hcurrent <- h
+    iter <- 0
+
+    repeat {
+      iter <- iter + 1
+      if (iter > maxit) break
+
+      xnext <- tail(x, 1) + direction * hcurrent
+      nllnext <- tryCatch(fn(xnext, model=model,...), error=function(e) NA)
+
+      # If NA, shrink step and try again
+      if (is.na(nllnext)) {
+        hcurrent <- hcurrent / 2
+        if (hcurrent < 1e-6) break
+        next
+      }
+
+      # Stop if drop exceeds tolerance
+      if ((nllnext-nll0) > ytol) break
+
+      # Append
+      x <- c(x, xnext)
+      yvals <- c(yvals, nllnext)
+
+      # Adaptive step only if at least 2 differences
+      if (adaptive && length(yvals) > 2) {
+        delta <- abs(yvals[length(yvals)] - yvals[length(yvals)-1])
+        if (delta > ystep) hcurrent <- hcurrent / 2
+        if (delta < ystep/4) hcurrent <- hcurrent * 2
+      }
+    }
+
+    data.frame(logphi = x, logLik = -yvals)
+  }
+
+  if (trace) cat("Profiling upwards\n")
+  up <- eval_along(logphi.mle, 1)
+  if (trace) cat("Profiling downwards\n")
+  down <- eval_along(logphi.mle, -1)
+
+  out <- rbind(up, down)
+  out <- out[order(out$logphi), ]
+  rownames(out) <- NULL
+  return(out)
+}
+
+#' @title MLE estimation of the shape of a binomial link function
+#' @description This function takes a model object, estimates a parameter phi that controls the shape of the link function, and performs further profiling for retrieving a confidence interval. The implementation heavily borrows from \code{"\link{TMB::tmbprofile}"}.
+#'
+#' @param model a model object which accepts a family argument (should correspond to "binomial") with a link function. The model should have corresponding \code{"\link{update}"} and \code{"\link{logLik}"} functionality implemented.
+#' @param CI logical, defaults to \code{TRUE}.
+#' @param alpha the confidence level, defaults to 0.05.
+#' @param plot logical, defaults to \code{TRUE}, so that a plot of the profiling is displayed. Only when CI is set to \code{TRUE}.
+#' @param h initial adaptive stepsize.
+#' @param ytol Adjusts the range of the likelihood values.
+#' @param ystep Adjusts the reoslution of the likelihood profile.
+#' @param maxit Maximum number of iterations for the adaptive algorithm.
+#' @param adaptive logical, defaults to \code{TRUE}. Implements adaptive step size.
+#' @param trace logical, defaults to \code{TRUE}. Prints progress.
+#' @param ... other arguments passed to \code{"\link{profile.phi}"}.
+#'
+#' @return A list including the optimisation results, CI, and final model fit.
+#'
+#' @author Bert van der Veen
+#' @references
+#' van der Veen and Hui (2025). In prep.
+#'
+#'@examples
+#'# Define logit link via gcloglog
+#'library(gcloglog)
+#'gcloglog1 <- make.gcloglog(1)
+#'
+#'# Profile the gcloglog link
+#'x <- rnorm(100)
+#'b1 = 2.3
+#'b0 = 0.1
+#'eta = b0+b1*x
+#'y = rbinom(length(x), 1, plogis(eta))
+#'data <- data.frame(y = y,x = x)
+#'model <- glm(y~x, family = binomial(link = gcloglog1), data = data)
+#'res <- profil.gcloglog(model)
+#'
+#'final.model <- res$final.model
+#' @export profile.gcloglog
+profile.gcloglog <- function(model, CI = TRUE, alpha = 0.05, plot = TRUE, h = 0.02, ytol = 2, ystep = 0.1,
+                             maxit = 100, adaptive = TRUE, trace = TRUE, ...){
+
+  if(!grepl("gcloglog", family(model)$link)){
+    model <- update(model, family = binomial(link = make.gcloglog(1)))
+  }
+
+  res <- profile.phi(model = model, y = model.response(model.frame(model)), ...)
+  logphi.mle  <- res$optr$par
+
+  gcloglog = make.gcloglog(exp(logphi.mle))
+  final.model <- try(update(model, family = binomial(link=gcloglog)), silent = TRUE)
+
+  if(inherits(final.model, "try-error"))final.model <- try(update(model, family = binomial(link=gcloglog), start = res$start), silent = TRUE)
+
+  logLik.mle <- logLik(final.model)
+
+  if(CI){
+    prof <- profile.phi.CI(logphi.mle, final.model, h = h, ytol = ytol, ystep = ystep, maxit = maxit, adaptive = adaptive, trace = trace)
+
+    tmp <- try({
+      li <- subset(prof, logphi<logphi.mle)
+      ui <- subset(prof, logphi>logphi.mle)
+
+      ans <- numeric(2)
+      threshold <- logLik.mle-0.5 * qchisq(1-alpha, df = 1)
+
+      sp <- spline(x = li[, "logphi"], y = li[, "logLik"])
+      ans[1] <- approx(sp$y, sp$x, xout = threshold)$y
+
+      sp <- spline(x = ui[, "logphi"], y = ui[, "logLik"])
+      ans[2] <- approx(sp$y, sp$x, xout = threshold)$y
+    })
+    if(inherits(tmp,"try-error")){ans <- NA;print(tmp)}else if(!any(is.na(ans)) && plot){
+      if(plot){
+        plot(y = prof$logLik, exp(prof$logphi), type = "l", ylab = "log-likelihood", xlab = expression(hat(phi)))
+      }
+      if(!is.na(ans[1]) & is.na(ans[2])) ans[2] <- exp(max(prof$logphi))
+      abline(v = exp(ans[1]), lty = "dotted")
+      abline(v = exp(ans[2]), lty = "dotted")
+    }
+  }else{ans <- NA;prof = NULL}
+
+
+  return(list(phi.mle = exp(logphi.mle), final.model = final.model, CI = exp(ans), prof = prof))
+}
+
 

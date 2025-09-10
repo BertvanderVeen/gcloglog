@@ -52,7 +52,6 @@ model <- glm(y~x, family = binomial(link = gcloglog1), data = data)
 #' Find optimal link shape by profiling phi
 res <- profile.phi(model)
 exp(res$optr$par) # extract phi
-model2 <- res$final.mod
 
 }
 \references{
