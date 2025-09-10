@@ -337,7 +337,7 @@ profile.phi.CI <- function(logphi.mle, model,
 #'
 #'final.model <- res$final.model
 #' @export profile.gcloglog
-profile.gcloglog <- function(model, CI = TRUE, alpha = 0.05, plot = TRUE, h = 0.02, ytol = 2, ystep = 0.1,
+profile.gcloglog <- function(model, CI = TRUE, method = "profile", alpha = 0.05, plot = TRUE, h = 0.02, ytol = 2, ystep = 0.1,
                              maxit = 100, adaptive = TRUE, trace = TRUE, ...){
 
   if(!grepl("gcloglog", family(model)$link)){
@@ -370,15 +370,19 @@ profile.gcloglog <- function(model, CI = TRUE, alpha = 0.05, plot = TRUE, h = 0.
       sp <- spline(x = ui[, "logphi"], y = ui[, "logLik"])
       ans[2] <- approx(sp$y, sp$x, xout = threshold)$y
     })
-    if(inherits(tmp,"try-error")){ans <- NA;print(tmp)}else if(!any(is.na(ans)) && plot){
-      if(plot){
-        plot(y = prof$logLik, exp(prof$logphi), type = "l", ylab = "log-likelihood", xlab = expression(hat(phi)))
-      }
-      if(!is.na(ans[1]) & is.na(ans[2])) ans[2] <- exp(max(prof$logphi))
+    if(inherits(tmp,"try-error")){ans <- NA;print(tmp)}
+
+    if(plot){
+      plot(y = prof$logLik, exp(prof$logphi), type = "l", ylab = "log-likelihood", xlab = expression(hat(phi)), xlim = c(0, min(105, max(exp(prof$logphi)))))
+
       abline(v = exp(ans[1]), lty = "dotted")
       abline(v = exp(ans[2]), lty = "dotted")
+      abline(v = exp(logphi.mle), col = "blue", lty = "dashed");mtext(at = exp(logphi.mle), side = 1, padj = 1, expression(hat(phi[max])), col = "blue")
+      abline(v = 1, col = "red", lty = "dashed");mtext(at = 1.1, padj = -1, "logit", col = "red")
+      abline(v = 100, col = "red", lty = "dashed");mtext(at = 100, padj = -1, "cloglog", col = "red")
+
     }
-  }else{ans <- NA;prof = NULL}
+  }
 
 
   return(list(phi.mle = exp(logphi.mle), final.model = final.model, CI = exp(ans), prof = prof))
