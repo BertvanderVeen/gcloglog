@@ -61,7 +61,7 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
 
       # gradient for nll
       a = eta-logphi
-      sum(phi * q * (-(pmax(0, a) + log1p(exp(-abs(a)))) + plogis(a)) *(y / p - (N - y) / (1 - p)))
+      -sum(phi * q * (-(pmax(0, a) + log1p(exp(-abs(a)))) + plogis(a)) *(y / p - (N - y) / (1 - p)))
     }
   }
 
@@ -248,11 +248,11 @@ profile.phi.CI <- function(logphi.mle, model,
     fn <- fn.default
   }
 
-  nll0 <- fn(logphi.mle, model = model,...)
+  nll.mle <- fn(logphi.mle, model = model,...)
 
   eval_along <- function(start, direction) {
     x <- start
-    yvals <- nll0
+    yvals <- nll.mle
     hcurrent <- h
     iter <- 0
 
@@ -271,7 +271,7 @@ profile.phi.CI <- function(logphi.mle, model,
       }
 
       # Stop if drop exceeds tolerance
-      if ((nllnext-nll0) > ytol) break
+      if ((nllnext-nll.mle) > ytol) break
 
       # Append
       x <- c(x, xnext)
@@ -288,10 +288,14 @@ profile.phi.CI <- function(logphi.mle, model,
     data.frame(logphi = x, logLik = -yvals)
   }
 
-  if (trace) cat("Profiling upwards\n")
-  up <- eval_along(logphi.mle, 1)
   if (trace) cat("Profiling downwards\n")
   down <- eval_along(logphi.mle, -1)
+  if (trace) cat("Profiling upwards\n")
+  # Ensure that we step enough for a CI even if the likelihood is flat on the left
+  ytol.down <- -nll.mle-min(down$logLik)
+  if(ytol.down<ytol)ytol = ytol + 2-ytol.down
+
+  up <- eval_along(logphi.mle, 1)
 
   out <- rbind(up, down)
   out <- out[order(out$logphi), ]
@@ -358,36 +362,38 @@ profile.gcloglog <- function(model, CI = TRUE, method = "profile", alpha = 0.05,
 
   if(CI){
     prof <- profile.phi.CI(logphi.mle, final.model, h = h, ytol = ytol, ystep = ystep, maxit = maxit, adaptive = adaptive, trace = trace)
+    prof$phi <- exp(prof$logphi)
+    prof <- prof[, -1]
 
     tmp <- try({
-      li <- subset(prof, logphi<logphi.mle)
-      ui <- subset(prof, logphi>logphi.mle)
+      li <- subset(prof, phi<exp(logphi.mle))
+      ui <- subset(prof, phi>exp(logphi.mle))
 
       ans <- numeric(2)
       threshold <- logLik.mle-0.5 * qchisq(1-alpha, df = 1)
 
-      sp <- spline(x = li[, "logphi"], y = li[, "logLik"])
+      sp <- spline(x = li[, "phi"], y = li[, "logLik"])
       ans[1] <- approx(sp$y, sp$x, xout = threshold)$y
-
-      sp <- spline(x = ui[, "logphi"], y = ui[, "logLik"])
+      if(is.na(ans[1]))ans[1]<- 0
+      sp <- spline(x = ui[, "phi"], y = ui[, "logLik"])
       ans[2] <- approx(sp$y, sp$x, xout = threshold)$y
     })
     if(inherits(tmp,"try-error")){ans <- NA;print(tmp)}
 
     if(plot){
-      plot(y = prof$logLik, exp(prof$logphi), type = "l", ylab = "log-likelihood", xlab = expression(hat(phi)), xlim = c(0, min(105, max(exp(prof$logphi)))))
+      plot(y = prof$logLik, prof$phi, type = "l", ylab = "log-likelihood", xlab = expression(hat(phi)), xlim = range(prof$phi))
 
-      abline(v = exp(ans[1]), lty = "dotted")
-      abline(v = exp(ans[2]), lty = "dotted")
+      abline(v = ans[1], lty = "dotted")
+      abline(v = ans[2], lty = "dotted")
       abline(v = exp(logphi.mle), col = "blue", lty = "dashed");mtext(at = exp(logphi.mle), side = 1, padj = 1, expression(hat(phi[max])), col = "blue")
       abline(v = 1, col = "red", lty = "dashed");mtext(at = 1.1, padj = -1, "logit", col = "red")
-      abline(v = 100, col = "red", lty = "dashed");mtext(at = 100, padj = -1, "cloglog", col = "red")
+      abline(v = 0, col = "red", lty = "dashed");mtext(at = 0, padj = -1, "cloglog", col = "red")
 
     }
   }
 
 
-  return(list(phi.mle = exp(logphi.mle), final.model = final.model, CI = exp(ans), prof = prof))
+  return(list(phi.mle = exp(logphi.mle), final.model = final.model, CI = ans, prof = prof))
 }
 
 

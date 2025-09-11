@@ -35,13 +35,13 @@
 make.gcloglog <- function(phi) {
   phi <- max(phi, .Machine$double.eps)
   link <- list(
-    linkfun = function(mu) { log(phi) - (1/phi) * log1p(-mu) + log1p(-exp((1/phi) * log1p(-mu))) },
-    linkinv = function(eta) { pmax(pmin(1 - (plogis(log(phi)-eta))^phi, 1 - .Machine$double.eps), .Machine$double.eps) },
+    linkfun = function(mu) { -log(phi) - (phi) * log1p(-mu) + log1p(-exp(phi * log1p(-mu))) },
+    linkinv = function(eta) { pmax(pmin(1 - (plogis(-log(phi)-eta))^(1/phi), 1 - .Machine$double.eps), .Machine$double.eps) },
     variance = binomial()$variance,
     dev.resids = binomial()$dev.resids,
     aic = binomial()$aic,
     mu.eta = function(eta) {
-      exp(eta - (phi + 1) * (eta + log1p(exp(-eta+log(phi))))+(phi+1)*log(phi))
+      exp(eta - (1/phi + 1) * (eta + log1p(exp(-eta-log(phi))))-(1/phi+1)*log(phi))
     },
     validmu = function(mu)all(is.finite(mu)) && all(mu > 0 & mu < 1),
     valideta = function(eta) TRUE,
