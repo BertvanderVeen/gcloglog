@@ -33,7 +33,7 @@
 #'
 #' @export
 make.gcloglog <- function(phi) {
-  phi <- max(phi, 1.400882e-08)
+  phi <- max(phi, 1.400882e-08) # weird stuff happens if we bound phi much lower.
   link <- list(
     linkfun = function(mu) { -log(phi) - (phi) * log1p(-mu) + log1p(-exp(phi * log1p(-mu))) },
     linkinv = function(eta) { pmax(pmin(1 - (plogis(-log(phi)-eta))^(1/phi), 1 - .Machine$double.eps), .Machine$double.eps) },
