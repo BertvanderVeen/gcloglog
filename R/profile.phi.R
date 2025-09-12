@@ -61,7 +61,7 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
 
       # gradient for nll
       a = plogis(-log(phi)-eta)
-      -sum(1/phi*(y/p-(1-y)/(1-p))*a^(1/phi)*(-log(phi)-log(1/phi+exp(eta))+1-a))
+      -sum(1/phi*(y/p-(N-y)/(1-p))*a^(1/phi)*(-log(phi)-log(1/phi+exp(eta))+1-a))
     }
   }
 
