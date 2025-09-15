@@ -36,7 +36,7 @@
 #' @rdname profile.phi
 #' @export
 #' @method profile.phi glm
-profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(method = "BFGS", maxit = 100), ...){
+profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(method = "BFGS", maxit = 1e6), ...){
   N <- weights(model)
 
   nll0 <- -logLik(model)
@@ -60,9 +60,7 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
       q = 1-p
 
       # gradient for nll
-      a = plogis(-log(phi)-eta)
-      -sum(1/phi*(y/p-(N-y)/(1-p))*a^(1/phi)*(-logphi-log(1/phi+exp(eta))+1-a))
-    }
+      -sum(phi^-1*(y/p-(1-y)/(1-p))*q*(log(q)+1-exp(phi*log(q))))    }
   }
 
   # could try to find a decent start
@@ -118,7 +116,7 @@ profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(metho
 #' @rdname profile.phi
 #' @export
 #' @method profile.phi merMod
-profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...){
+profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 1e6), ...){
 
   nll0 = -logLik(model)
 
@@ -132,7 +130,7 @@ profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(m
 #' @rdname profile.phi
 #' @export
 #' @method profile.phi default
-profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...){
+profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 1e6), ...){
   # still needs to be adjusted for N>1 case
   # Here we do gradient free optimisatin
   # The "general" class of models is harder to implement analytical derivatives for..
@@ -350,6 +348,18 @@ profile.gcloglog <- function(model, CI = TRUE, method = "profile", alpha = 0.05,
 
   res <- profile.phi(model = model, y = model.response(model.frame(model)), ...)
   logphi.mle  <- res$optr$par
+
+  # if(inherits(model, "glm")){
+  #   # check convergence
+  #   args <- list(...)
+  #   if(!"optimizer" %in% names(args)){
+  #     if(res$optr$convergence>0){
+  #warning("Optimiser did not converge. Trying with larger number of iterations")
+  #     args$optControl <- list(maxit = 1e6)
+  #     res <- do.call(profile.phi, model = model, y = model.response(model.frame(model)), args)
+  #}
+  #   }
+  # }
 
   gcloglog = make.gcloglog(exp(logphi.mle))
   final.model <- try(update(model, family = binomial(link=gcloglog), start = res$start), silent = TRUE)
