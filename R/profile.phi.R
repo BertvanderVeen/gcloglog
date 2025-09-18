@@ -4,7 +4,8 @@
 #' @param model a model object which accepts a family argument (should correspond to "binomial") with a link function. The model should have corresponding \code{"\link{update}"} and \code{"\link{logLik}"} functionality implemented.
 #' @param y response variable.
 #' @param optimizer numerical optimisation routine used to estimate phi. Must accept the starting value, objective function, gradient, and control arugments (in that order). Defaults to \code{"\link{optim}"}.
-#' @param optControl arguments passed to optimizer.
+#' @param optControl control arguments passed to optimizer.
+#' @param optArgs other arguments passed on to the optimizer as a list.
 #' @param ... other arguments passed to \code{"\link{update}"}.
 #'
 #' @return The optimisation results of the profiling, with log(phi) as the estimated parameter.
@@ -36,92 +37,62 @@
 #' @rdname profile.phi
 #' @export
 #' @method profile.phi glm
-profile.phi.glm <- function(model, y, optimizer = optim, optControl = list(method = "BFGS", maxit = 1e6), ...){
+profile.phi.glm <- function(model, y, optimizer = nlminb, optControl = list(iter.max = 1e6, eval.max = 1e6), optArgs = NULL, ...){
   N <- weights(model)
 
   nll0 <- -logLik(model)
 
-  # objective in the GLM case
-  gr <- function(logphi, model, y, N, nll0, ...){
-    phi = exp(logphi)
-    gcloglog <- make.gcloglog(phi)
-    fit <- try(newmodelgr <- update(model, family = binomial(link = gcloglog), start = coef(model), ...), silent = TRUE)
+  logphi.start = log(1.01)
 
-    if(inherits(fit, "try-error")){
-      # try without starting values
-      fit <- try(newmodelgr <- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
-    }
-
-    if(inherits(fit, "try-error")){
-      NA
-    }else{
-      eta = predict(newmodelgr)
-      p = predict(newmodelgr, type="response")
-      q = 1-p
-
-      # gradient for nll
-      -sum(phi^-1*(y/p-(1-y)/(1-p))*q*(log(q)+1-exp(phi*log(q))))    }
-  }
-
-  # could try to find a decent start
-  # continue = TRUE
-  # logphi.start = log(1.1)
-  # while(continue){
-  #   if(is.na(fn.glm(logphi.start, model = model, nll0 = nll0))){
-  #   logphi.start = logphi.start+2
-  #   }else{
-  #     break
-  #   }
-  # }
-
-  if(missing(optimizer)){
-  if("method" %in% names(optControl)){
-  method = optControl$method
-  optControl <- optControl[names(optControl) != "method"]
-  }else{
-    method  = "BFGS"
-  }
-
-  optr <- try(optim(log(1.01), fn = fn.glm, gr = gr, method = method, control = optControl, model = model, y = y, N = N, nll0 = nll0), silent = TRUE)
+  optr <- try(do.call(nlminb, list(logphi.start, fn.glm, gr.glm, control = optControl, model = model, y = y, N = N, nll0 = nll0, optArgs)))
 
   # Search a bit for a start
   if(inherits(optr,"try-error")){
     maxit = 20
-    logphi.start = 1.1
     it <- 1
     while(inherits(optr,"try-error") && it  < maxit){
-    optr <- try(optim(logphi.start, fn = fn.glm, gr = gr, method = method, control = optControl, model = model, y = y, N = N, nll0 = nll0), silent = TRUE)
-    logphi.start <- logphi.start + 0.1
+      logphi.start <- logphi.start + 0.1
+    optr <- try(do.call(nlminb, list(logphi.start, fn.glm, gr.glm, control = optControl, model = model, y = y, N = N, nll0 = nll0, optArgs)))
     it <- it + 1
     }
   }
-  }else{
-  optr <- try(optimizer(log(1.01), fn.glm, gr, control = optControl, model = model, y = y, N = N, nll0 = nll0), silent = TRUE)
 
-  # Search a bit for a start
-  if(inherits(optr,"try-error")){
-    maxit = 20
-    logphi.start = 1.1
-    it <- 1
-    while(inherits(optr,"try-error") && it  < maxit){
-      optr <- try(optimizer(logphi.start, fn.glm, gr, control = optControl, model = model, y = y, N = N, nll0 = nll0), silent = TRUE)
-      logphi.start <- logphi.start + 0.1
-      it <- it + 1
-    }
-  }
-  }
   return(list(optr = optr, start = coef(model)))
+}
+
+
+# objective in the GLM case
+gr.glm <- function(logphi, model, y, N, nll0, ...){
+  phi = exp(logphi)
+  gcloglog <- make.gcloglog(phi)
+  fit <- try(newmodelgr <- update(model, family = binomial(link = gcloglog), start = coef(model), ...), silent = TRUE)
+
+  if(inherits(fit, "try-error")){
+    # try without starting values
+    fit <- try(newmodelgr <- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
+  }
+
+  if(inherits(fit, "try-error")){
+    NA
+  }else{
+    eta = predict(newmodelgr)
+    p = predict(newmodelgr, type="response")
+    q = 1-p
+
+    # gradient for nll
+    -sum(phi^-1*(y/p-(1-y)/(1-p))*q*(log(q)+1-exp(phi*log(q))))
+  }
 }
 
 #' @rdname profile.phi
 #' @export
 #' @method profile.phi merMod
-profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 1e6), ...){
+profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 1e6), optArgs = NULL, ...){
 
   nll0 = -logLik(model)
 
   # Here we do gradient free optimisatin
-  optr <- optimizer(log(1.01), fn.merMod, control = optControl, model = model, y = y, nll0 = nll0)
+  optr <- do.call(optimizer, list(log(1.01), fn.merMod, control = optControl, model = model, y = y, nll0 = nll0, optArgs))
 
   return(list(optr = optr, start = list(fixef = fixef(model),
                                                      theta =  getME(model, "theta"))))
@@ -130,11 +101,13 @@ profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(m
 #' @rdname profile.phi
 #' @export
 #' @method profile.phi default
-profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 1e6), ...){
+profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 1e6), optArgs = NULL, ...){
   # still needs to be adjusted for N>1 case
   # Here we do gradient free optimisatin
   # The "general" class of models is harder to implement analytical derivatives for..
-  optr <- optimizer(log(1.01), fn.generic, control = optControl, model = model, y = y)
+  nll0 = -logLik(model)
+
+  optr <- do.call(optimizer, list(log(1.01), fn.generic, control = optControl, model = model, y = y, nll0 = nll0, optArgs))
 
   return(list(optr = optr))
 }
