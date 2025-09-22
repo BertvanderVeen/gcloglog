@@ -41,10 +41,13 @@ make.gcloglog <- function(phi) {
     dev.resids = binomial()$dev.resids,
     aic = binomial()$aic,
     mu.eta = function(eta) {
-      exp(eta - (1/phi + 1) * (eta + log1p(exp(-eta-log(phi))))-(1/phi+1)*log(phi))
+      x <- -(eta + log(phi))
+      log1pexp <- ifelse(x <= -37, exp(x), ifelse(x <= 18, log1p(exp(x)), ifelse(x <=
+                                                                       33, x + exp(-x), x)))
+      exp(eta - (1/phi + 1) * (eta + log1pexp)-(1/phi+1)*log(phi))
     },
     validmu = function(mu)all(is.finite(mu)) && all(mu > 0 & mu < 1),
-    valideta = function(eta) TRUE,
+    valideta = function(eta) all(eta > -700 & eta < 700),
     simulate = binomial()$simulate,
     initialize = binomial()$initialize,
     dispersion = 1,
