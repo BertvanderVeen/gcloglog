@@ -9,14 +9,29 @@
 \method{profile.phi}{glm}(
   model,
   y,
-  optimizer = optim,
-  optControl = list(method = "BFGS", maxit = 100),
+  optimizer = nlminb,
+  optControl = list(iter.max = 1e+06, eval.max = 1e+06),
+  optArgs = NULL,
   ...
 )
 
-\method{profile.phi}{merMod}(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...)
+\method{profile.phi}{merMod}(
+  model,
+  y,
+  optimizer = bobyqa,
+  optControl = list(maxit = 1e+06),
+  optArgs = NULL,
+  ...
+)
 
-\method{profile.phi}{default}(model, y, optimizer = bobyqa, optControl = list(maxit = 100), ...)
+\method{profile.phi}{default}(
+  model,
+  y,
+  optimizer = bobyqa,
+  optControl = list(maxit = 1e+06),
+  optArgs = NULL,
+  ...
+)
 }
 \arguments{
 \item{model}{a model object which accepts a family argument (should correspond to "binomial") with a link function. The model should have corresponding \code{"\link{update}"} and \code{"\link{logLik}"} functionality implemented.}
@@ -25,7 +40,9 @@
 
 \item{optimizer}{numerical optimisation routine used to estimate phi. Must accept the starting value, objective function, gradient, and control arugments (in that order). Defaults to \code{"\link{optim}"}.}
 
-\item{optControl}{arguments passed to optimizer.}
+\item{optControl}{control arguments passed to optimizer.}
+
+\item{optArgs}{other arguments passed on to the optimizer as a list.}
 
 \item{...}{other arguments passed to \code{"\link{update}"}.}
 }

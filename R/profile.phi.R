@@ -105,9 +105,8 @@ profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(
   # still needs to be adjusted for N>1 case
   # Here we do gradient free optimisatin
   # The "general" class of models is harder to implement analytical derivatives for..
-  nll0 = -logLik(model)
 
-  optr <- do.call(optimizer, list(log(1.01), fn.generic, control = optControl, model = model, y = y, nll0 = nll0, optArgs))
+  optr <- do.call(optimizer, list(log(1.01), fn.generic, control = optControl, model = model, optArgs))
 
   return(list(optr = optr))
 }
@@ -191,8 +190,6 @@ fn.generic <- function(logphi, model, ...){
   gcloglog <- make.gcloglog(phi)
 
   args <- list(...)
-  args$y <- NULL
-  args$N <- NULL
 
   args$object = model
   args$family = binomial(link = gcloglog)
@@ -312,7 +309,7 @@ profile.phi.CI <- function(logphi.mle, model,
 #'
 #'final.model <- res$final.model
 #' @export profile.gcloglog
-profile.gcloglog <- function(model, CI = TRUE, method = "profile", alpha = 0.05, plot = TRUE, h = 0.02, ytol = 2, ystep = 0.1,
+profile.gcloglog <- function(model, CI = TRUE, alpha = 0.05, plot = TRUE, h = 0.02, ytol = 2, ystep = 0.1,
                              maxit = 100, adaptive = TRUE, trace = TRUE, ...){
 
   if(!grepl("gcloglog", family(model)$link)){
