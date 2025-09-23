@@ -260,6 +260,8 @@ profile.phi.CI <- function(logphi.mle, model,
   down <- eval_along(logphi.mle, -1)
   if (trace) cat("Profiling upwards\n")
   # Ensure that we step enough for a CI even if the likelihood is flat on the left
+  # Remove everyting below the thresold for phi in make.gcloglog
+  down <- down[down$logphi>=log(1.400882e-08), ,drop=FALSE]
   ytol.down <- -nll.mle-min(down$logLik)
   if(ytol.down<ytol)ytol = ytol + 2-ytol.down
 
