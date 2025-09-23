@@ -39,6 +39,7 @@
 #' @method profile.phi glm
 profile.phi.glm <- function(model, y, optimizer = nlminb, optControl = list(iter.max = 1e6, eval.max = 1e6), optArgs = NULL, ...){
   N <- weights(model)
+  if(is.matrix(y) && any(N>1))y  <- y[,1]/N
 
   nll0 <- -logLik(model)
 
@@ -122,6 +123,7 @@ fn.glm <- function(logphi, model, nll0, ...){
 
   args <- list(...)
   args$y <- NULL
+  args$weights = args$N
   args$N <- NULL
 
   args$object = model
