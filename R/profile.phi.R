@@ -37,15 +37,15 @@
 #' @rdname profile.phi
 #' @export
 #' @method profile.phi glm
-profile.phi.glm <- function(model, y, optimizer = nlminb, optControl = list(iter.max = 1e6, eval.max = 1e6), optArgs = NULL, ...){
+profile.phi.glm <- function(model, y, optimizer = nlminb, optControl = list(iter.max = 1e6, eval.max = 1e6), optArgs = list(), ...){
   N <- weights(model)
-  if(is.matrix(y) && any(N>1))y  <- y[,1]/N
+  if(is.matrix(y))y  <- y[,1]/N
 
   nll0 <- -logLik(model)
 
   logphi.start = log(1.01)
 
-  optr <- try(do.call(nlminb, list(logphi.start, fn.glm, gr.glm, control = optControl, model = model, y = y, N = N, nll0 = nll0, optArgs)))
+  optr <- try(do.call(optimizer, c(list(logphi.start, fn.glm, gr.glm, control = optControl, model = model, y = y, N = N, nll0 = nll0), optArgs)))
 
   # Search a bit for a start
   if(inherits(optr,"try-error")){
@@ -53,7 +53,7 @@ profile.phi.glm <- function(model, y, optimizer = nlminb, optControl = list(iter
     it <- 1
     while(inherits(optr,"try-error") && it  < maxit){
       logphi.start <- logphi.start + 0.1
-    optr <- try(do.call(nlminb, list(logphi.start, fn.glm, gr.glm, control = optControl, model = model, y = y, N = N, nll0 = nll0, optArgs)))
+    optr <- try(do.call(optimizer, c(list(logphi.start, fn.glm, gr.glm, control = optControl, model = model, y = y, N = N, nll0 = nll0), optArgs)))
     it <- it + 1
     }
   }
@@ -66,11 +66,22 @@ profile.phi.glm <- function(model, y, optimizer = nlminb, optControl = list(iter
 gr.glm <- function(logphi, model, y, N, nll0, ...){
   phi = exp(logphi)
   gcloglog <- make.gcloglog(phi)
-  fit <- try(newmodelgr <- update(model, family = binomial(link = gcloglog), start = coef(model), ...), silent = TRUE)
 
-  if(inherits(fit, "try-error")){
+  args <- list(...)
+  args$y <- NULL
+  args$N <- NULL
+
+  args$object = model
+  args$family = binomial(link = gcloglog)
+
+  args$start = coef(model)
+
+  fit <- try(newmodelgr <- do.call(update, args), silent = TRUE)
+
+  if(inherits(fit, "try-error") && !is.null(args$start) || !newmodelgr$converged && !is.null(args$start)){
+    args$start <- NULL
     # try without starting values
-    fit <- try(newmodelgr <- update(model, family = binomial(link = gcloglog), ...), silent = TRUE)
+    fit <- try(newmodelgr <- do.call(update, args), silent = TRUE)
   }
 
   if(inherits(fit, "try-error")){
@@ -81,7 +92,7 @@ gr.glm <- function(logphi, model, y, N, nll0, ...){
     q = 1-p
 
     # gradient for nll
-    -sum(phi^-1*(y/p-(1-y)/(1-p))*q*(log(q)+1-exp(phi*log(q))))
+    -sum(phi^-1*(y/p-(1-y)/(1-p))*q*(phi*log(q)+1-exp(phi*log(q))))
   }
 }
 
@@ -123,7 +134,6 @@ fn.glm <- function(logphi, model, nll0, ...){
 
   args <- list(...)
   args$y <- NULL
-  args$weights = args$N
   args$N <- NULL
 
   args$object = model
@@ -133,7 +143,7 @@ fn.glm <- function(logphi, model, nll0, ...){
 
   fit <- try(newmodelfn <- do.call(update, args), silent = TRUE)
 
-  if(inherits(fit, "try-error") && !is.null(args$start)){
+  if(inherits(fit, "try-error") && !is.null(args$start) || !newmodelfn$converged && !is.null(args$start)){
     args$start <- NULL
     # try without starting values
     fit <- try(newmodelfn <- do.call(update, args), silent = TRUE)
@@ -336,9 +346,12 @@ profile.gcloglog <- function(model, CI = TRUE, alpha = 0.05, plot = TRUE, h = 0.
   # }
 
   gcloglog = make.gcloglog(exp(logphi.mle))
-  final.model <- try(update(model, family = binomial(link=gcloglog), start = res$start), silent = TRUE)
-
-  if(inherits(final.model, "try-error"))final.model <- try(update(model, family = binomial(link=gcloglog), start = NULL), silent = TRUE)
+  if(inherits(model, "glm")){
+    final.model <- try(update(model, family = binomial(link=gcloglog), start = res$start), silent = TRUE)
+    if(inherits(final.model, "try-error") || !is.null(res$start) && !final.model$converged)final.model <- try(update(model, family = binomial(link=gcloglog), start = NULL), silent = TRUE)
+  }else{
+    final.model <- try(update(model, family = binomial(link=gcloglog), start = res$start), silent = TRUE)
+  }
 
   logLik.mle <- logLik(final.model)
   prof <- NULL
