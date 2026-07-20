@@ -225,7 +225,7 @@ profile.phi.CI <- function(logphi.mle, model,
   }else  if(inherits(model, "merMod")){
     fn <- function(logphi.mle, model, nll=0)fn.merMod(logphi.mle, model, nll)
   }else{
-    fn <- fn.default
+    fn <- fn.generic
   }
 
   nll.mle <- fn(logphi.mle, model = model,...)
@@ -319,7 +319,7 @@ profile.phi.CI <- function(logphi.mle, model,
 #'y = rbinom(length(x), 1, plogis(eta))
 #'data <- data.frame(y = y,x = x)
 #'model <- glm(y~x, family = binomial(link = gcloglog1), data = data)
-#'res <- profil.gcloglog(model)
+#'res <- profile.gcloglog(model)
 #'
 #'final.model <- res$final.model
 #' @export profile.gcloglog
