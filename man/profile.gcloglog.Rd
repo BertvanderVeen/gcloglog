@@ -60,7 +60,7 @@ eta = b0+b1*x
 y = rbinom(length(x), 1, plogis(eta))
 data <- data.frame(y = y,x = x)
 model <- glm(y~x, family = binomial(link = gcloglog1), data = data)
-res <- profil.gcloglog(model)
+res <- profile.gcloglog(model)
 
 final.model <- res$final.model
 }
