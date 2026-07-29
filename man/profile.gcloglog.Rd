@@ -15,6 +15,7 @@
   maxit = 100,
   adaptive = TRUE,
   trace = TRUE,
+  warmstart = TRUE,
   ...
 )
 }
@@ -38,6 +39,8 @@
 \item{adaptive}{logical, defaults to \code{TRUE}. Implements adaptive step size.}
 
 \item{trace}{logical, defaults to \code{TRUE}. Prints progress.}
+
+\item{warmstart}{logical, defaults to \code{TRUE}. If \code{TRUE}, each trial phi is fit starting from the coefficients of the best-fitting model found so far, rather than always restarting from the coefficients of the initial \code{model}.}
 
 \item{...}{other arguments passed to \code{"\link{profile.phi}"}.}
 }

@@ -11,7 +11,8 @@
   y,
   optimizer = nlminb,
   optControl = list(iter.max = 1e+06, eval.max = 1e+06),
-  optArgs = NULL,
+  optArgs = list(),
+  warmstart = TRUE,
   ...
 )
 
@@ -21,6 +22,7 @@
   optimizer = bobyqa,
   optControl = list(maxit = 1e+06),
   optArgs = NULL,
+  warmstart = TRUE,
   ...
 )
 
@@ -43,6 +45,8 @@
 \item{optControl}{control arguments passed to optimizer.}
 
 \item{optArgs}{other arguments passed on to the optimizer as a list.}
+
+\item{warmstart}{logical, defaults to \code{TRUE}. If \code{TRUE}, each trial phi is fit starting from the coefficients of the best-fitting model found so far in the search, rather than always restarting from the coefficients of the initial \code{model}.}
 
 \item{...}{other arguments passed to \code{"\link{update}"}.}
 }
