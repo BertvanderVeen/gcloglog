@@ -1,11 +1,12 @@
 Package: gcloglog
 Title: Functions for fitting models with the generalized complementary log-log function
 Version: 0.0.0.9000
-Authors@R: c(person("Bert", "van der veen", role = c("aut", "cre"), email = "bert_van_der_veen@hotmail.com"),
+Authors@R: c(person("Bert", "van der Veen", role = c("aut", "cre"), email = "bert_van_der_veen@hotmail.com"),
              person("Francis K.C.", "Hui", role = "aut"))
 Description: The gcloglog package provides functionality for fitting a flexible link function in binomial regression based on a latent negative-binomial count. The original link function was proposed by Aranda-Ordaz (1981), and motivation via a negative-binomial latent count by van der Veen and Hui (in prep).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: GPL (>= 2)
+Imports:
+    nloptr
 Suggests:
     lme4
 Encoding: UTF-8
