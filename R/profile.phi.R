@@ -122,8 +122,8 @@ profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(m
   # Here we do gradient free optimisatin
   optr <- do.call(optimizer, c(list(log(1.01), fn.merMod, control = optControl, state = state, y = y), optArgs))
 
-  return(list(optr = optr, start = list(fixef = fixef(state$model),
-                                                     theta =  getME(state$model, "theta"))))
+  return(list(optr = optr, start = list(fixef = lme4::fixef(state$model),
+                                                     theta =  lme4::getME(state$model, "theta"))))
 }
 
 #' @rdname profile.phi
@@ -198,8 +198,8 @@ fn.merMod <- function(logphi, state, ...){
   args$object = model
   args$family = binomial(link = gcloglog)
 
-  args$start = list(fixef = fixef(model),
-                    theta =  getME(model, "theta"))
+  args$start = list(fixef = lme4::fixef(model),
+                    theta =  lme4::getME(model, "theta"))
 
   fit <- try(newmodelfn <- do.call(update, args), silent = TRUE)
 
@@ -395,7 +395,7 @@ profile.gcloglog <- function(model, CI = TRUE, alpha = 0.05, plot = TRUE, h = 0.
       # custom link objects are numerically fragile in glmer's default nAGQ path
       # (see e.g. "Downdated VtV is not positive definite"); nAGQ=0 with a
       # theta-only start is a more stable fallback
-      theta.start <- if(is.list(res$start) && !is.null(res$start$theta)) res$start$theta else getME(model, "theta")
+      theta.start <- if(is.list(res$start) && !is.null(res$start$theta)) res$start$theta else lme4::getME(model, "theta")
       final.model <- try(update(model, family = binomial(link=gcloglog), start = theta.start, nAGQ = 0), silent = TRUE)
     }
   }
