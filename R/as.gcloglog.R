@@ -79,8 +79,8 @@ summary.gcloglog <- function(object, correct = TRUE, ...) {
 print.summary.gcloglog <- function(x, ...) {
   NextMethod()
   note <- switch(x$phi.status,
-    corrected = "standard errors account for its estimation.",
-    `not requested` = "standard errors are conditional on it.",
+    corrected = "standard errors are corrected.",
+    `not requested` = "standard errors are naive",
     paste0(x$phi.status, "; standard errors are conditional on it."))
   cat("\nLink shape phi = ", signif(x$phi.link, 4), " (estimated); ", note, "\n\n", sep = "")
   invisible(x)

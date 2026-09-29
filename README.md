@@ -2,9 +2,9 @@
 
 Package that facilitates fitting a generalized complementary log-log model. Software is appendix to van der Veen and Hui (2026) in prep.
 
-The link includes a shape parameter phi, which arises from a latent negative-binomial count. It defines a family of link functions that encompasses the logit (phi = 1) and cloglog (phi = 0) links jointly as special cases, with other values of phi giving further shapes.
+The link includes a shape parameter phi, which arises from a latent negative-binomial count. It defines a family of link functions that encompasses the logit (phi = 1) and cloglog (phi = 0) links as special cases.
 
-<p align="center"><img src="man/figures/README-link.png" width="500" alt="Probability of presence against the linear predictor for the gcloglog link at a range of phi"></p>
+<p align="center"><img src="man/figures/README-link.png" width="500" alt="Probability of success against the linear predictor for the gcloglog link at a range of phi"></p>
 
 *Probability of presence against the linear predictor of the latent count, for phi from exp(-10) to exp(10), coloured from dark (small phi, little overdispersion in the latent count) to light (large phi). Black lines: logit (solid, phi = 1), cloglog (dashed, phi -> 0), and gcloglog with phi = 5 (dotted).*
 
