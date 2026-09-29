@@ -6,9 +6,14 @@ Authors@R: c(person("Bert", "van der Veen", role = c("aut", "cre"), email = "ber
 Description: The gcloglog package provides functionality for fitting a flexible link function in binomial regression based on a latent negative-binomial count. The original link function was proposed by Aranda-Ordaz (1981), and motivation via a negative-binomial latent count by van der Veen and Hui (in prep).
 License: GPL (>= 2)
 Imports:
-    nloptr
-Suggests:
-    lme4
+    graphics,
+    lme4,
+    Matrix,
+    methods,
+    nloptr,
+    numDeriv,
+    stats,
+    utils
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
