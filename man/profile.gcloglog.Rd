@@ -50,6 +50,30 @@ A list including the optimisation results, CI, and final model fit.
 \description{
 This function takes a model object, estimates a parameter phi that controls the shape of the link function, and performs further profiling for retrieving a confidence interval. The implementation heavily borrows from \code{"\link{TMB::tmbprofile}"}.
 }
+\details{
+The final model inherits from class \code{"gcloglog"}, so that its \code{vcov},
+\code{summary}, and \code{confint} return standard errors that account for the
+estimation of phi; \code{vcov(..., correct = FALSE)} and
+\code{summary(..., correct = FALSE)} give those conditional on phi. \code{confint}
+defaults to Wald confidence intervals from the corrected covariance; \code{method = "profile"}
+(and \code{"boot"} for \code{glmer} fits) are other options conditional on phi.
+
+For a \code{glm}, the corrected asymptotic covariance is the naive covariance conditional
+on the estimated link shape, plus a rank-one update, which follows from the
+joint information of the coefficients and log(phi). For a \code{glmer} fit, it
+is the fixed-effect block of the inverse of the joint Hessian of the
+Laplace-approximated log-likelihood in the random-effect parameters (lme4's theta),
+the fixed effects, and log(phi), obtained by finite differences
+(\code{\link[numDeriv]{hessian}}). Random-effect parameters at their boundary (a
+singular fit) are held fixed.
+
+The correction does not apply when the estimate of phi is at the boundary phi = 0,
+where the fit is equivalent to cloglog regression (detected as the fit not improving
+on the log-likelihood of the cloglog link at the same parameter estimates by more
+than 1e-5), or when the joint information is not positive definite. In those cases
+the standard errors are conditional on phi, with a warning from \code{vcov} and
+\code{confint}, and a note in the printed \code{summary}.
+}
 \examples{
 # Define logit link via gcloglog
 library(gcloglog)
@@ -66,6 +90,10 @@ model <- glm(y~x, family = binomial(link = gcloglog1), data = data)
 res <- profile.gcloglog(model)
 
 final.model <- res$final.model
+summary(final.model)                 # standard errors account for the estimate of phi
+confint(final.model)
+summary(final.model)                 # conditional on the estimate of phi
+vcov(final.model, correct = FALSE)   # conditional on the estimate of phi
 }
 \references{
 van der Veen and Hui (2025). In prep.
