@@ -102,7 +102,7 @@ gr.glm <- function(logphi, state, y, N, ...){
     q = 1-p
 
     # gradient for nll
-    g <- -sum(phi^-1*(y/p-(1-y)/(1-p))*q*(phi*log(q)+1-exp(phi*log(q))))
+    g <- -sum(N*phi^-1*(y/p-(1-y)/(1-p))*q*(phi*log(q)+1-exp(phi*log(q))))
     if(!is.finite(g)) sign(logphi) * 1e6 else g
   }
 }
