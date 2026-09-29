@@ -29,11 +29,15 @@
 #'data <- data.frame(y = y,x = x)
 #'model <- glm(y~x, family = binomial(link = gcloglog1), data = data)
 #'
-#'#' Find optimal link shape by profiling phi
-#'res <- profile.phi(model)
+#'# Find optimal link shape by profiling phi
+#'res <- profile.phi(model, y = model.response(model.frame(model)))
 #'exp(res$optr$par) # extract phi
 #'
 #' @importFrom nloptr bobyqa
+#' @importFrom stats approx binomial coef family logLik model.frame model.response nlminb
+#'   plogis predict qchisq spline update weights
+#' @importFrom graphics abline mtext
+#' @importFrom utils tail
 #'
 #' @rdname profile.phi
 #' @export
@@ -140,7 +144,7 @@ profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(
 }
 
 #' @export
-profile.phi <- function(x, ...) {
+profile.phi <- function(model, ...) {
   UseMethod("profile.phi")
 }
 
@@ -240,8 +244,8 @@ fn.generic <- function(logphi, model, ...){
   }
 }
 
-#' @export profile.phi.CI
-profile.phi.CI <- function(logphi.mle, model,
+#' @export
+profile_phi_CI <- function(logphi.mle, model,
                            h = 0.02, ytol = 2, ystep = 0.1,
                            maxit = 100, adaptive = TRUE, trace = TRUE, warmstart = TRUE, ...) {
 
@@ -338,6 +342,29 @@ profile.phi.CI <- function(logphi.mle, model,
 #'
 #' @return A list including the optimisation results, CI, and final model fit.
 #'
+#' @details The final model inherits from class \code{"gcloglog"}, so that its \code{vcov},
+#' \code{summary}, and \code{confint} return standard errors that account for the
+#' estimation of phi; \code{vcov(..., correct = FALSE)} and
+#' \code{summary(..., correct = FALSE)} give those conditional on phi. \code{confint}
+#' defaults to Wald confidence intervals from the corrected covariance; \code{method = "profile"}
+#' (and \code{"boot"} for \code{glmer} fits) are other options conditional on phi.
+#'
+#' For a \code{glm}, the corrected asymptotic covariance is the naive covariance conditional
+#' on the estimated link shape, plus a rank-one update, which follows from the 
+#' joint information of the coefficients and log(phi). For a \code{glmer} fit, it 
+#' is the fixed-effect block of the inverse of the joint Hessian of the 
+#' Laplace-approximated log-likelihood in the random-effect parameters (lme4's theta),
+#' the fixed effects, and log(phi), obtained by finite differences
+#' (\code{\link[numDeriv]{hessian}}). Random-effect parameters at their boundary (a
+#' singular fit) are held fixed.
+#'
+#' The correction does not apply when the estimate of phi is at the boundary phi = 0,
+#' where the fit is equivalent to cloglog regression (detected as the fit not improving
+#' on the log-likelihood of the cloglog link at the same parameter estimates by more
+#' than 1e-5), or when the joint information is not positive definite. In those cases
+#' the standard errors are conditional on phi, with a warning from \code{vcov} and
+#' \code{confint}, and a note in the printed \code{summary}.
+#'
 #' @author Bert van der Veen
 #' @references
 #' van der Veen and Hui (2025). In prep.
@@ -358,6 +385,10 @@ profile.phi.CI <- function(logphi.mle, model,
 #'res <- profile.gcloglog(model)
 #'
 #'final.model <- res$final.model
+#'summary(final.model)                 # standard errors account for the estimate of phi
+#'confint(final.model)
+#'summary(final.model)                 # conditional on the estimate of phi
+#'vcov(final.model, correct = FALSE)   # conditional on the estimate of phi
 #' @export profile.gcloglog
 profile.gcloglog <- function(model, CI = TRUE, alpha = 0.05, plot = TRUE, h = 0.02, ytol = 2, ystep = 0.1,
                              maxit = 100, adaptive = TRUE, trace = TRUE, warmstart = TRUE, ...){
@@ -409,13 +440,13 @@ profile.gcloglog <- function(model, CI = TRUE, alpha = 0.05, plot = TRUE, h = 0.
   ans = NA
 
   if(CI){
-    prof <- profile.phi.CI(logphi.mle, final.model, h = h, ytol = ytol, ystep = ystep, maxit = maxit, adaptive = adaptive, trace = trace, warmstart = warmstart)
+    prof <- profile_phi_CI(logphi.mle, final.model, h = h, ytol = ytol, ystep = ystep, maxit = maxit, adaptive = adaptive, trace = trace, warmstart = warmstart)
     prof$phi <- exp(prof$logphi)
     prof <- prof[, -1]
 
     tmp <- try({
-      li <- subset(prof, phi<exp(logphi.mle))
-      ui <- subset(prof, phi>exp(logphi.mle))
+      li <- prof[prof$phi < exp(logphi.mle), ]
+      ui <- prof[prof$phi > exp(logphi.mle), ]
 
       ans <- numeric(2)
       threshold <- logLik.mle-0.5 * qchisq(1-alpha, df = 1)
@@ -440,6 +471,8 @@ profile.gcloglog <- function(model, CI = TRUE, alpha = 0.05, plot = TRUE, h = 0.
     }
   }
 
+
+  final.model <- as.gcloglog(final.model)
 
   return(list(phi.mle = exp(logphi.mle), final.model = final.model, CI = ans, prof = prof))
 }
