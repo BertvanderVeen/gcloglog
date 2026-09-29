@@ -70,8 +70,8 @@ y = rbinom(length(x), 1, plogis(eta))
 data <- data.frame(y = y,x = x)
 model <- glm(y~x, family = binomial(link = gcloglog1), data = data)
 
-#' Find optimal link shape by profiling phi
-res <- profile.phi(model)
+# Find optimal link shape by profiling phi
+res <- profile.phi(model, y = model.response(model.frame(model)))
 exp(res$optr$par) # extract phi
 
 }
