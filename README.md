@@ -2,7 +2,7 @@
 
 Package that facilitates fitting a generalized complementary log-log model. Software is appendix to van der Veen and Hui (2026) in prep.
 
-The link is indexed by a dispersion parameter phi, which arises from a latent negative-binomial count. It defines a family of link functions that encompasses the logit (phi = 1) and cloglog (phi = 0) links jointly as special cases, with other values of phi giving further shapes.
+The link includes a shape parameter phi, which arises from a latent negative-binomial count. It defines a family of link functions that encompasses the logit (phi = 1) and cloglog (phi = 0) links jointly as special cases, with other values of phi giving further shapes.
 
 <p align="center"><img src="man/figures/README-link.png" width="500" alt="Probability of presence against the linear predictor for the gcloglog link at a range of phi"></p>
 
