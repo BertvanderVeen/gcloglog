@@ -76,6 +76,28 @@ The asymptotic covariance due to the joint information is a rank-one update of t
 
 When the estimate of phi is at the boundary (phi = 0), the fit is equivalent to cloglog regression and the correction is not defined. The returned standard errors are then those conditional on phi, with a warning from `vcov()` and `confint()` and a note in the printed `summary()`.
 
+### Models fitted at an estimate of phi
+
+A `glm` or `glmer` fitted at an estimate of phi can be corrected directly, without profiling again:
+
+```r
+# glm, at the estimate of phi from above
+fit <- glm(y ~ x, family = binomial(link = make.gcloglog(res$phi.mle)), data = data)
+fit <- gcloglog:::as.gcloglog(fit)
+summary(fit)
+
+# glmer, at the estimate of phi for the salamander data (phi = 1.534)
+library(lme4)
+data(Salamanders, package = "glmmTMB")
+Salamanders$present <- as.numeric(Salamanders$count > 0)
+gm <- glmer(present ~ spp + mined + cover + DOP + DOY + (1 | site),
+            family = binomial(link = make.gcloglog(1.534)), data = Salamanders)
+gm <- gcloglog:::as.gcloglog(gm)
+summary(gm)
+```
+
+For the salamander data, the standard error of the effect of mining is 0.94 once the estimation of phi is accounted for, against 0.57 when phi is treated as known.
+
 ## References
 
 Aranda-Ordaz, F. J. (1981). On two families of transformations to additivity for binary response data. *Biometrika*, 68(2), 357-363. doi:10.1093/biomet/68.2.357
