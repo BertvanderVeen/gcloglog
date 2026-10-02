@@ -34,7 +34,7 @@ glm_joint_info <- function(object, phi) {
   curv <- -y / p^2 * (1 - p) * A^2 + r * (-phi * (e / u)^2 - log1mp - e / u)
 
   I_bl <- -colSums(cross * X)              # I_{beta, log phi}
-  I_ll <- -sum(curv)                       # I_{log phi, log phi}
+  I_ll <- -sum(curv) - min(-sum(r * A), 0) # I_{log phi, log phi}. min() applies a correction: below phi, log phi loses curvature much faster than phi, so the hessian returned is in terms of phi.
   Sb_I <- as.vector(Sigma %*% I_bl)
   list(Sigma = Sigma, Sb_I = Sb_I, den = I_ll - sum(I_bl * Sb_I))
 }
@@ -59,12 +59,17 @@ glmm_correction <- function(model, phi, boundary.tol) {
   par0 <- c(theta[free], beta, log(phi))
 
   # phi-hat is at the boundary phi = 0 if the fit does not improve on the cloglog link,
-  # the phi -> 0 limit, at the same parameters by more than boundary.tol
-  if (glmm_devfun(model, stats::binomial("cloglog"), nAGQ)(pars(par0)) / 2 - nll(par0) < boundary.tol)
+  # the phi -> 0 limit, at the same parameters by more than boundary.tol; if PIRLS for the
+  # cloglog link does not converge at these parameters, they are far from the cloglog fit
+  nll0 <- tryCatch(glmm_devfun(model, stats::binomial("cloglog"), nAGQ)(pars(par0)) / 2, error = function(e) Inf)
+  if (nll0 - nll(par0) < boundary.tol)
     return(list(status = at_boundary, V = V_na))
 
-  # joint Hessian in (theta, beta, log phi)
+  # joint Hessian in (theta, beta, log phi). min() applies a correction: below phi, log phi
+  # loses curvature much faster than phi, so the hessian returned is in terms of phi.
   H <- numDeriv::hessian(nll, par0)
+  slope <- numDeriv::grad(function(lp) nll(replace(par0, nt + k + 1, lp)), log(phi))
+  H[nt + k + 1, nt + k + 1] <- H[nt + k + 1, nt + k + 1] - min(slope, 0)
   incl <- nt + seq_len(k)
   incld <- c(seq_len(nt), nt + k + 1)
   A <- H[incl, incl, drop = FALSE]
