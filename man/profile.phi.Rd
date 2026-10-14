@@ -10,7 +10,7 @@
   model,
   y,
   optimizer = nlminb,
-  optControl = list(iter.max = 1e+06, eval.max = 1e+06),
+  optControl = list(iter.max = 500, eval.max = 500),
   optArgs = list(),
   warmstart = TRUE,
   ...
@@ -20,7 +20,7 @@
   model,
   y,
   optimizer = bobyqa,
-  optControl = list(maxit = 1e+06),
+  optControl = list(maxit = 500),
   optArgs = NULL,
   warmstart = TRUE,
   ...
@@ -30,7 +30,7 @@
   model,
   y,
   optimizer = bobyqa,
-  optControl = list(maxit = 1e+06),
+  optControl = list(maxit = 500),
   optArgs = NULL,
   ...
 )

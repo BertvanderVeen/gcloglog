@@ -42,7 +42,7 @@
 #' @rdname profile.phi
 #' @export
 #' @method profile.phi glm
-profile.phi.glm <- function(model, y, optimizer = nlminb, optControl = list(iter.max = 1e6, eval.max = 1e6), optArgs = list(), warmstart = TRUE, ...){
+profile.phi.glm <- function(model, y, optimizer = nlminb, optControl = list(iter.max = 500, eval.max = 500), optArgs = list(), warmstart = TRUE, ...){
   N <- weights(model)
   if(is.matrix(y))y  <- y[,1]/N
 
@@ -114,7 +114,7 @@ gr.glm <- function(logphi, state, y, N, ...){
 #' @rdname profile.phi
 #' @export
 #' @method profile.phi merMod
-profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 1e6), optArgs = NULL, warmstart = TRUE, ...){
+profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 500), optArgs = NULL, warmstart = TRUE, ...){
 
   # mutable state shared across optimizer callbacks, so that a better-fitting
   # model found for one trial phi can warm-start the next trial phi
@@ -133,7 +133,7 @@ profile.phi.merMod <- function(model, y, optimizer = bobyqa, optControl = list(m
 #' @rdname profile.phi
 #' @export
 #' @method profile.phi default
-profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 1e6), optArgs = NULL, ...){
+profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(maxit = 500), optArgs = NULL, ...){
   # still needs to be adjusted for N>1 case
   # Here we do gradient free optimisatin
   # The "general" class of models is harder to implement analytical derivatives for..
