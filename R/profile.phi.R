@@ -42,7 +42,7 @@
 #' @rdname profile.phi
 #' @export
 #' @method profile.phi glm
-profile.phi.glm <- function(model, y, optimizer = nlminb, optControl = list(iter.max = 500, eval.max = 500), optArgs = list(), warmstart = TRUE, ...){
+profile.phi.glm <- function(model, y, optimizer = nlminb, optControl = list(iter.max = 500, eval.max = 500), optArgs = list(lower = log(1.400882e-08)), warmstart = TRUE, ...){
   N <- weights(model)
   if(is.matrix(y))y  <- y[,1]/N
 
