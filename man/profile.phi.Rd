@@ -11,7 +11,7 @@
   y,
   optimizer = nlminb,
   optControl = list(iter.max = 500, eval.max = 500),
-  optArgs = list(),
+  optArgs = list(lower = log(1.400882e-08)),
   warmstart = TRUE,
   ...
 )
