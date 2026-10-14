@@ -19,13 +19,13 @@ glm_joint_info <- function(object, phi) {
   X <- stats::model.matrix(object)[, !is.na(cf), drop = FALSE]
   Sigma <- stats::summary.glm(object)$cov.scaled
   N <- object$prior.weights
-  y <- object$y * N
   eta <- object$linear.predictors
 
   e <- exp(eta)
   u <- 1 + phi * e
   log1mp <- -log1p(phi * e) / phi          # log(1 - p)
   p <- -expm1(log1mp)
+  y <- N * p                               # expectation over y, as for the expected information in Sigma
   A <- e / u + log1mp                      # dp/dlog(phi) = (1 - p) * A
   r <- y / p - N
   dp_deta <- (1 - p) * e / u
