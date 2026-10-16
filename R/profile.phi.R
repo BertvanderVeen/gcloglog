@@ -71,7 +71,6 @@ profile.phi.glm <- function(model, y, optimizer = nlminb, optControl = list(iter
   return(list(optr = optr, start = coef(state$model)))
 }
 
-
 # objective in the GLM case
 gr.glm <- function(logphi, state, y, N, ...){
   phi = exp(logphi)
@@ -143,6 +142,7 @@ profile.phi.default <- function(model, y, optimizer = bobyqa, optControl = list(
   return(list(optr = optr))
 }
 
+#' @rdname profile.phi
 #' @export
 profile.phi <- function(model, ...) {
   UseMethod("profile.phi")
@@ -244,7 +244,6 @@ fn.generic <- function(logphi, model, ...){
   }
 }
 
-#' @export
 profile_phi_CI <- function(logphi.mle, model,
                            h = 0.02, ytol = 2, ystep = 0.1,
                            maxit = 100, adaptive = TRUE, trace = TRUE, warmstart = TRUE, ...) {
@@ -325,7 +324,7 @@ profile_phi_CI <- function(logphi.mle, model,
 }
 
 #' @title MLE estimation of the shape of a binomial link function
-#' @description This function takes a model object, estimates a parameter phi that controls the shape of the link function, and performs further profiling for retrieving a confidence interval. The implementation heavily borrows from \code{"\link{TMB::tmbprofile}"}.
+#' @description This function takes a model object, estimates a parameter phi that controls the shape of the link function, and performs further profiling for retrieving a confidence interval. The implementation heavily borrows from \code{tmbprofile} in the \pkg{TMB} package.
 #'
 #' @param model a model object which accepts a family argument (should correspond to "binomial") with a link function. The model should have corresponding \code{"\link{update}"} and \code{"\link{logLik}"} functionality implemented.
 #' @param CI logical, defaults to \code{TRUE}.

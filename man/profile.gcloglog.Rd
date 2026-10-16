@@ -48,7 +48,7 @@
 A list including the optimisation results, CI, and final model fit.
 }
 \description{
-This function takes a model object, estimates a parameter phi that controls the shape of the link function, and performs further profiling for retrieving a confidence interval. The implementation heavily borrows from \code{"\link{TMB::tmbprofile}"}.
+This function takes a model object, estimates a parameter phi that controls the shape of the link function, and performs further profiling for retrieving a confidence interval. The implementation heavily borrows from \code{tmbprofile} in the \pkg{TMB} package.
 }
 \details{
 The final model inherits from class \code{"gcloglog"}, so that its \code{vcov},
@@ -59,9 +59,9 @@ defaults to Wald confidence intervals from the corrected covariance; \code{metho
 (and \code{"boot"} for \code{glmer} fits) are other options conditional on phi.
 
 For a \code{glm}, the corrected asymptotic covariance is the naive covariance conditional
-on the estimated link shape, plus a rank-one update, which follows from the
-joint information of the coefficients and log(phi). For a \code{glmer} fit, it
-is the fixed-effect block of the inverse of the joint Hessian of the
+on the estimated link shape, plus a rank-one update, which follows from the 
+joint information of the coefficients and log(phi). For a \code{glmer} fit, it 
+is the fixed-effect block of the inverse of the joint Hessian of the 
 Laplace-approximated log-likelihood in the random-effect parameters (lme4's theta),
 the fixed effects, and log(phi), obtained by finite differences
 (\code{\link[numDeriv]{hessian}}). Random-effect parameters at their boundary (a

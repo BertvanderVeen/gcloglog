@@ -4,6 +4,7 @@
 \alias{profile.phi.glm}
 \alias{profile.phi.merMod}
 \alias{profile.phi.default}
+\alias{profile.phi}
 \title{MLE estimation of the shape of a binomial link function}
 \usage{
 \method{profile.phi}{glm}(
@@ -34,6 +35,8 @@
   optArgs = NULL,
   ...
 )
+
+profile.phi(model, ...)
 }
 \arguments{
 \item{model}{a model object which accepts a family argument (should correspond to "binomial") with a link function. The model should have corresponding \code{"\link{update}"} and \code{"\link{logLik}"} functionality implemented.}
