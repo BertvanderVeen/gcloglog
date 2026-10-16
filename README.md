@@ -102,4 +102,4 @@ For the salamander data, the standard error of the effect of mining is 0.94 once
 
 Aranda-Ordaz, F. J. (1981). On two families of transformations to additivity for binary response data. *Biometrika*, 68(2), 357-363. doi:10.1093/biomet/68.2.357
 
-van der Veen, B. and Hui, F. K. C. (2026). In prep.
+van der Veen, B., Hui, F. K. C. (2026). On Motivating the Choice of Link Function in Binomial Regression Through A Latent Abundance Process. in prep.
